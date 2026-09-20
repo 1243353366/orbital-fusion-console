@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer-core'
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 
 const baseUrl = process.env.TEST_URL || 'http://127.0.0.1:4173/'
 const expectServiceWorker = process.env.EXPECT_SW === '1'
@@ -23,6 +23,11 @@ const clickByText = async (page, text) => {
 
 try {
   const desktop = await browser.newPage()
+  const securityConsoleErrors = []
+  desktop.on('console', (message) => {
+    const text = message.text()
+    if (text.includes('Content Security Policy') || text.includes('violates the following')) securityConsoleErrors.push(text)
+  })
   await desktop.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 })
   await desktop.goto(baseUrl, { waitUntil: 'domcontentloaded' })
   await desktop.waitForSelector('.detail-panel')
@@ -51,6 +56,49 @@ try {
     })
     if (!pwa.active || pwa.display !== 'standalone') throw new Error(`PWA check failed: ${JSON.stringify(pwa)}`)
   }
+  if (securityConsoleErrors.length) throw new Error(`CSP violations: ${securityConsoleErrors.join('\n')}`)
+
+  const browserLens = await browser.newPage()
+  await browserLens.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 })
+  const browserUrl = new URL(baseUrl)
+  browserUrl.searchParams.set('view', 'browser')
+  await browserLens.goto(browserUrl.toString(), { waitUntil: 'domcontentloaded' })
+  await browserLens.waitForFunction(() => document.body.textContent?.includes('Private page scan'))
+  const scanDisabledBeforeConsent = await browserLens.$eval('.browser-scan-button', (button) => button.disabled)
+  if (!scanDisabledBeforeConsent) throw new Error('Browser scan must be disabled before consent')
+  await browserLens.click('.browser-consent input')
+  await browserLens.click('.browser-scan-button')
+  await browserLens.waitForFunction(() => document.body.textContent?.includes('PAGE HYGIENE'))
+  const browserScan = await browserLens.evaluate(() => ({
+    consentReset: !(document.querySelector('.browser-consent input'))?.checked,
+    hasReport: Boolean(document.querySelector('.browser-report')),
+    text: document.querySelector('.browser-report')?.textContent || '',
+  }))
+  if (!browserScan.consentReset || !browserScan.hasReport || !browserScan.text.includes('No obvious DOM hygiene issues')) {
+    throw new Error(`Browser lens consent flow failed: ${JSON.stringify(browserScan)}`)
+  }
+
+  const artifactScanner = await browser.newPage()
+  await artifactScanner.setViewport({ width: 1440, height: 1000, deviceScaleFactor: 1 })
+  const artifactUrl = new URL(baseUrl)
+  artifactUrl.searchParams.set('view', 'artifact')
+  await artifactScanner.goto(artifactUrl.toString(), { waitUntil: 'domcontentloaded' })
+  await artifactScanner.waitForFunction(() => document.body.textContent?.includes('Release verification'))
+  const fixturePath = 'qa/orbital-scan-fixture.zip'
+  await writeFile(fixturePath, 'orbital-fusion-console security fixture\n')
+  await artifactScanner.$eval('.file-drop input', (input) => { input.value = '' })
+  const fileInput = await artifactScanner.$('.file-drop input')
+  if (!fileInput) throw new Error('Artifact file input not found')
+  await fileInput.uploadFile(fixturePath)
+  await artifactScanner.click('.artifact-consent input')
+  await artifactScanner.click('.artifact-panel .browser-scan-button')
+  await artifactScanner.waitForFunction(() => document.body.textContent?.includes('FINGERPRINT COMPLETE'))
+  const artifactResult = await artifactScanner.evaluate(() => ({
+    consentReset: !(document.querySelector('.artifact-consent input'))?.checked,
+    hasSha256: (document.querySelector('.hash-list')?.textContent || '').includes('SHA-256'),
+    noAutoUpload: (document.querySelector('.artifact-panel')?.textContent || '').includes('NO AUTOMATIC UPLOADS'),
+  }))
+  if (!artifactResult.consentReset || !artifactResult.hasSha256 || !artifactResult.noAutoUpload) throw new Error(`Artifact scan flow failed: ${JSON.stringify(artifactResult)}`)
 
   const mobile = await browser.newPage()
   await mobile.setViewport({ width: 390, height: 844, deviceScaleFactor: 1 })
@@ -68,7 +116,7 @@ try {
   }))
   if (responsive.scrollWidth > responsive.viewport + 1) throw new Error(`Horizontal overflow: ${JSON.stringify(responsive)}`)
 
-  console.log(JSON.stringify({ desktop: 'evidence and policy gate passed', mobile: responsive, pwa }, null, 2))
+  console.log(JSON.stringify({ desktop: 'evidence and policy gate passed', browserLens: 'one-time consent and local report passed', artifactScanner: 'local hashing and consent reset passed', mobile: responsive, pwa }, null, 2))
 } finally {
   await browser.close()
 }

@@ -6,7 +6,7 @@ The console is divided into four working areas: the top navigation bar, the left
 
 ## Top navigation
 
-**Observatory** is the active prototype. **Code Lab**, **Malware Lab**, and **Notebook** show roadmap notices because this repository is a frontend-only map prototype. They do not execute code, accept malware, or persist research records.
+**Observatory** opens the intelligence map. **Browser Lens** demonstrates the active-tab consent flow. **File Scanner** fingerprints release artifacts locally. **Malware Lab** and **Notebook** remain roadmap notices; they do not execute malware or persist research records.
 
 The **Safe Analysis** indicator confirms that the cyber scenario is synthetic. **Data gate** opens the source policy register and shows the current count of open/ready versus restricted connectors.
 
@@ -62,9 +62,23 @@ Expand a source to review its license, permitted use, redistribution posture, de
 
 The health center is a transparent preview of the proposed connector administration experience. Test and Sync actions only display demo notices. A production implementation must move credentials, synchronization, logs, rate-limit handling, and provider-specific policy decisions to a secure backend.
 
+## Browser Lens
+
+Open **Browser Lens**, review the read/never-read disclosure, and check the one-time consent box. **Scan this live preview** examines only the current Orbital page's structure and security-related attributes. Consent resets when the scan finishes and no report is uploaded.
+
+For other sites, install the optional extension from the latest GitHub release. The extension requests temporary `activeTab` and `scripting` access only after the user invokes it. See the [Browser Lens guide](BROWSER_EXTENSION.md).
+
+## File Scanner
+
+Open **File Scanner** and select an APK, EXE, ZIP, or other artifact. After one-time local-read consent, the browser calculates SHA-256, SHA-1, and MD5 in streaming chunks. The file is not uploaded.
+
+Use the included local CLI for a ClamAV verdict and optional VirusTotal or MetaDefender hash-only reputation lookups. An unknown hash is not clean, and optional file submission is deliberately outside the automatic workflow. See the [File Scanner guide](FILE_SCANNER.md).
+
 ## Install as an app
 
-On Chromium-based desktop browsers, open the browser menu and choose **Install Orbital Fusion Console**. On iPhone or iPad, open the Share menu and choose **Add to Home Screen**. Installation requires the deployed HTTPS site.
+Select **Install app** in the header or use the browser menu and choose **Install Orbital Fusion Console**. On iPhone or iPad, open the Share menu and choose **Add to Home Screen**. Installation requires the deployed HTTPS site.
+
+For localhost, download the release archive, extract it, run `node start-local.mjs`, and open `http://127.0.0.1:4173`. The launcher binds only to the local machine.
 
 The service worker caches only same-origin application-shell files. It deliberately avoids bulk caching third-party tiles, which helps respect upstream services and licensing boundaries. Live imagery still requires connectivity.
 

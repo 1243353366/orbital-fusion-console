@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>Orbital Browser Lens</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="brand">
+        <span class="mark" aria-hidden="true">◎</span>
+        <div><strong>ORBITAL</strong><span>BROWSER LENS</span></div>
+        <span class="local">LOCAL</span>
+      </header>
+
+      <section class="intro">
+        <p class="eyebrow">ACTIVE TAB · ONE-TIME CONSENT</p>
+        <h1>Inspect this page</h1>
+        <p>Review page security signals and structure without sending page data anywhere.</p>
+      </section>
+
+      <section class="scope" aria-label="Scan scope">
+        <div><span>Reads</span><strong>Current tab structure</strong></div>
+        <div><span>Never reads</span><strong>History, cookies, passwords, form values</strong></div>
+        <div><span>Network</span><strong>No report upload</strong></div>
+      </section>
+
+      <label class="consent">
+        <input id="consent" type="checkbox" />
+        <span>I consent to a one-time local inspection of the active tab. I understand no page content is transmitted.</span>
+      </label>
+
+      <button id="scan" class="scan" type="button" disabled>
+        <span aria-hidden="true">⌁</span> Scan this page
+      </button>
+      <p id="status" class="status" role="status">Waiting for consent.</p>
+
+      <section id="report" class="report" hidden>
+        <div class="score-row">
+          <div><span>PAGE HYGIENE</span><strong id="score">—</strong></div>
+          <div class="grade" id="grade">—</div>
+        </div>
+        <dl class="meta">
+          <div><dt>URL</dt><dd id="url">—</dd></div>
+          <div><dt>Scanned</dt><dd id="scanned">—</dd></div>
+        </dl>
+        <div id="findings" class="findings"></div>
+        <div class="report-actions">
+          <button id="copy" type="button">Copy JSON</button>
+          <button id="download" type="button">Download report</button>
+        </div>
+      </section>
+
+      <footer>
+        <a href="https://1243353366.github.io/orbital-fusion-console/?view=browser" target="_blank" rel="noreferrer">Open Orbital Fusion Console ↗</a>
+      </footer>
+    </main>
+    <script src="scanner.js"></script>
+    <script src="popup.js"></script>
+  </body>
+</html>

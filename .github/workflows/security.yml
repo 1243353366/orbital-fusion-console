@@ -1,0 +1,41 @@
+name: Security validation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install project dependencies
+        run: npm ci
+      - name: Install security scanners
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clamav clamav-freshclam yara
+          pipx install semgrep
+          pipx install detect-secrets
+          sudo freshclam || true
+      - name: Build release artifacts
+        run: npm run release:pack
+      - name: Run layered security scan
+        run: ./scripts/security-scan.sh
+      - name: Upload scan evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-scan-results
+          path: .security-results/
+          if-no-files-found: warn

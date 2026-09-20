@@ -16,7 +16,15 @@ The interface has three intelligence lenses:
 | **EARTH** | Review public satellite imagery, acquisition time, change masks, and regional context. |
 | **FUSION** | Examine temporal and geographic overlap while preserving source-level confidence and caveats. |
 
-It also includes an interactive MapLibre map, live NASA GIBS browse tiles, a provenance-aware event record, a licensing gate for open/account/restricted data, an exportable JSON intelligence brief, a connector health preview, responsive mobile layouts, and a PWA service worker for installable app-shell access.
+It also includes an interactive MapLibre map, live NASA GIBS browse tiles, a provenance-aware event record, a licensing gate for open/account/restricted data, an exportable JSON intelligence brief, a consent-based active-tab Browser Lens, a hash-first artifact scanner, responsive mobile layouts, and a PWA service worker for installable app-shell access.
+
+## Browser and release scanning
+
+**Browser Lens** is an optional Chromium/Firefox extension that reads only the active tab after one-time consent. It requests exactly `activeTab` and `scripting`, declares no persistent host access, and has no history, cookies, storage, background, telemetry, or report-upload capability. See [`docs/BROWSER_EXTENSION.md`](docs/BROWSER_EXTENSION.md).
+
+**File Scanner** calculates SHA-256, SHA-1, and MD5 locally before any reputation lookup. The included CLI normalizes local ClamAV, VirusTotal hash lookup, and MetaDefender Cloud hash lookup results. It never uploads artifacts. See [`docs/FILE_SCANNER.md`](docs/FILE_SCANNER.md).
+
+The exact v0.2.0 scan scope, engine versions, results, limitations, and release hashes are recorded in [`docs/SECURITY_VALIDATION.md`](docs/SECURITY_VALIDATION.md).
 
 ## Quick start
 
@@ -70,7 +78,9 @@ A complete walkthrough is available in [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md
 
 ## PWA installation
 
-After the deployed app has loaded, use the browser’s **Install app** action. On iOS/iPadOS, use **Share → Add to Home Screen**. The app shell can reopen offline after it has been cached; live external map tiles still require a network connection and are intentionally not copied into the service-worker cache.
+After the deployed app has loaded, select **Install app** in the header or use the browser’s install action. On iOS/iPadOS, use **Share → Add to Home Screen**. The app shell can reopen offline after it has been cached; live external map tiles still require a network connection and are intentionally not copied into the service-worker cache.
+
+The **v0.2.0 Release Hardening** GitHub release contains a no-dependency localhost bundle. Extract `sentinel-atlas-v0.2.0-localhost.zip`, run `node start-local.mjs`, and open `http://127.0.0.1:4173`. The launcher binds only to the local loopback interface.
 
 ## Data and licensing model
 
@@ -94,6 +104,8 @@ React + TypeScript
        │
        ├── Synthetic event + evidence graph
        ├── Provenance / licensing policy register
+       ├── Consent-based active-tab browser lens
+       ├── Hash-first artifact scanner + normalized provider adapters
        ├── JSON export gate
        └── PWA manifest + same-origin app-shell cache
 ```
@@ -112,6 +124,9 @@ Synthetic events and connector metadata live in [`src/data.ts`](src/data.ts). Ne
 | `npm run build` | Type-check and create the production build. |
 | `npm run lint` | Run Oxlint. |
 | `npm run test:e2e` | Test evidence, policy, and mobile navigation against a running local server. |
+| `npm run test:extension` | Validate extension permissions, prohibited APIs, and scanner fixtures. |
+| `npm run scan:file -- path/to/artifact.zip` | Run local ClamAV plus configured hash reputation lookups; never uploads. |
+| `npm run release:pack` | Build Chromium, Firefox, and localhost release archives with SHA-256 checksums. |
 | `npm run preview` | Preview the production build locally. |
 
 ## Upstream credit

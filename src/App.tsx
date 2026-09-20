@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { createMD5, createSHA1, createSHA256 } from 'hash-wasm'
 import * as maplibregl from 'maplibre-gl'
 import type { GeoJSONSource, Map as MapLibreMap, MapLayerMouseEvent, RasterTileSource } from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -44,7 +45,54 @@ type LayerState = {
 }
 
 type DetailTab = 'overview' | 'evidence' | 'provenance'
-type SideView = 'event' | 'sources' | 'connectors'
+type SideView = 'event' | 'sources' | 'connectors' | 'browser' | 'artifact'
+
+type BrowserPreviewReport = {
+  score: number
+  grade: string
+  scannedAt: string
+  inventory: {
+    links: number
+    forms: number
+    fields: number
+    frames: number
+    externalOrigins: number
+  }
+  findings: Array<{ level: string; title: string; detail: string }>
+}
+
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
+type ArtifactReport = {
+  generatedAt: string
+  artifact: { name: string; size: number; type: string; modifiedAt: string }
+  hashes: { sha256: string; sha1: string; md5: string }
+  reputation: Array<{
+    provider: string
+    status: 'not-configured' | 'not-found' | 'known'
+    detections: number | null
+    engines: number | null
+    provenance: string
+  }>
+  localScan: { provider: string; status: 'not-run'; detail: string }
+}
+
+const MAX_BROWSER_ARTIFACT_BYTES = 512 * 1024 * 1024
+
+async function hashArtifact(file: File) {
+  const [sha256, sha1, md5] = await Promise.all([createSHA256(), createSHA1(), createMD5()])
+  const chunkSize = 4 * 1024 * 1024
+  for (let offset = 0; offset < file.size; offset += chunkSize) {
+    const chunk = new Uint8Array(await file.slice(offset, offset + chunkSize).arrayBuffer())
+    sha256.update(chunk)
+    sha1.update(chunk)
+    md5.update(chunk)
+  }
+  return { sha256: sha256.digest(), sha1: sha1.digest(), md5: md5.digest() }
+}
 
 const modeCopy: Record<Mode, { label: string; detail: string }> = {
   CYBER: { label: 'CYBER', detail: 'Infrastructure + campaign graph' },
@@ -660,6 +708,157 @@ function ConnectorsPanel({ onClose, notify }: { onClose: () => void; notify: (me
   )
 }
 
+function BrowserScanPanel({
+  onClose,
+  consent,
+  setConsent,
+  report,
+  onScan,
+}: {
+  onClose: () => void
+  consent: boolean
+  setConsent: (consent: boolean) => void
+  report: BrowserPreviewReport | null
+  onScan: () => void
+}) {
+  return (
+    <aside className="detail-panel panel-surface browser-panel">
+      <div className="panel-topline">
+        <div className="eyebrow"><ShieldCheck size={13} /> BROWSER LENS · CONSENT REQUIRED</div>
+        <button type="button" className="icon-button" onClick={onClose} aria-label="Close browser lens"><X size={16} /></button>
+      </div>
+      <div className="source-panel-heading browser-heading">
+        <span className="event-code">ACTIVE TAB ONLY</span>
+        <h1>Private page scan</h1>
+        <p>The downloadable extension inspects only the active tab after a click. This live panel demonstrates the same checks against the Orbital app itself.</p>
+      </div>
+      <div className="detail-scroll browser-scroll">
+        <div className="permission-grid">
+          <div><span>READS</span><strong>Active-tab structure and security attributes</strong></div>
+          <div><span>NEVER READS</span><strong>History, cookies, passwords, values, or other tabs</strong></div>
+          <div><span>REPORT ROUTE</span><strong>Local only — no upload endpoint</strong></div>
+        </div>
+
+        <label className="browser-consent">
+          <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
+          <span><strong>One-time consent</strong>I authorize a local structure scan of this page. Consent resets immediately after the scan.</span>
+        </label>
+        <button type="button" className="primary-button browser-scan-button" disabled={!consent} onClick={onScan}>
+          <ShieldCheck size={14} /> Scan this live preview
+        </button>
+
+        {report ? (
+          <section className="browser-report" aria-live="polite">
+            <div className="browser-score">
+              <div><span>PAGE HYGIENE</span><strong>{report.score}/100</strong></div>
+              <em>{report.grade}</em>
+            </div>
+            <div className="browser-meta"><span>SCANNED LOCALLY</span><strong>{new Date(report.scannedAt).toLocaleTimeString()}</strong></div>
+            <div className="inventory-grid">
+              {Object.entries(report.inventory).map(([label, value]) => <div key={label}><strong>{value}</strong><span>{label.replace(/([A-Z])/g, ' $1')}</span></div>)}
+            </div>
+            <div className="browser-findings">
+              {report.findings.map((finding) => (
+                <article className={finding.level} key={finding.title}>
+                  <span>{finding.level}</span><strong>{finding.title}</strong><p>{finding.detail}</p>
+                </article>
+              ))}
+            </div>
+            <p className="scan-limit"><AlertTriangle size={13} /> A clean DOM hygiene scan does not prove a page is safe. It is not a vulnerability assessment or malware verdict.</p>
+          </section>
+        ) : <div className="scan-empty"><Fingerprint size={20} /><strong>No page data has been read</strong><span>Review the scope, check consent, then start the one-time preview.</span></div>}
+      </div>
+      <div className="detail-actions browser-actions">
+        <a className="primary-button" href="https://github.com/1243353366/orbital-fusion-console/releases/latest" target="_blank" rel="noopener noreferrer"><Download size={14} /> Get browser package</a>
+        <a className="secondary-button" href="https://github.com/1243353366/orbital-fusion-console/blob/main/docs/BROWSER_EXTENSION.md" target="_blank" rel="noopener noreferrer"><BookOpen size={14} /> Install guide</a>
+      </div>
+    </aside>
+  )
+}
+
+function ArtifactScannerPanel({
+  onClose,
+  file,
+  consent,
+  setConsent,
+  busy,
+  report,
+  onFile,
+  onHash,
+  onExport,
+}: {
+  onClose: () => void
+  file: File | null
+  consent: boolean
+  setConsent: (consent: boolean) => void
+  busy: boolean
+  report: ArtifactReport | null
+  onFile: (file: File | null) => void
+  onHash: () => void
+  onExport: () => void
+}) {
+  return (
+    <aside className="detail-panel panel-surface artifact-panel">
+      <div className="panel-topline">
+        <div className="eyebrow"><Fingerprint size={13} /> FILE SCANNER · HASH FIRST</div>
+        <button type="button" className="icon-button" onClick={onClose} aria-label="Close file scanner"><X size={16} /></button>
+      </div>
+      <div className="source-panel-heading browser-heading">
+        <span className="event-code">NO AUTOMATIC UPLOADS</span>
+        <h1>Release verification</h1>
+        <p>Fingerprint an APK, EXE, ZIP, or other artifact locally, then use the normalized record for reputation lookup before any optional submission.</p>
+      </div>
+      <div className="detail-scroll browser-scroll">
+        <div className="scan-pipeline" aria-label="Artifact scan pipeline">
+          {['Artifact', 'SHA-256', 'Reputation', 'Optional submit', 'Normalized result'].map((step, index) => (
+            <div key={step}><span>{String(index + 1).padStart(2, '0')}</span><strong>{step}</strong></div>
+          ))}
+        </div>
+
+        <label className="file-drop">
+          <input type="file" onChange={(event) => onFile(event.target.files?.[0] ?? null)} />
+          <Database size={22} />
+          <strong>{file ? file.name : 'Choose an artifact'}</strong>
+          <span>{file ? `${(file.size / 1024 / 1024).toFixed(2)} MB · ${file.type || 'unknown type'}` : 'APK · EXE · ZIP · DMG · package or binary · 512 MB max'}</span>
+        </label>
+
+        <label className="browser-consent artifact-consent">
+          <input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} />
+          <span><strong>Local hash consent</strong>I authorize this browser to read the selected file only to calculate SHA-256, SHA-1, and MD5. The file is not uploaded.</span>
+        </label>
+        <button type="button" className="primary-button browser-scan-button" disabled={!file || !consent || busy} onClick={onHash}>
+          <Fingerprint size={14} /> {busy ? 'Hashing locally…' : 'Calculate fingerprints'}
+        </button>
+
+        {report ? (
+          <section className="artifact-report" aria-live="polite">
+            <div className="artifact-summary"><span>FINGERPRINT COMPLETE</span><strong>{report.artifact.name}</strong><small>{new Date(report.generatedAt).toLocaleString()}</small></div>
+            <dl className="hash-list">
+              <div><dt>SHA-256</dt><dd>{report.hashes.sha256}</dd></div>
+              <div><dt>SHA-1</dt><dd>{report.hashes.sha1}</dd></div>
+              <div><dt>MD5</dt><dd>{report.hashes.md5}</dd></div>
+            </dl>
+            <div className="provider-list">
+              {report.reputation.map((provider) => (
+                <article key={provider.provider}>
+                  <div><strong>{provider.provider}</strong><span>{provider.provenance}</span></div>
+                  <em>{provider.status.replace('-', ' ')}</em>
+                </article>
+              ))}
+              <article><div><strong>{report.localScan.provider}</strong><span>{report.localScan.detail}</span></div><em>{report.localScan.status.replace('-', ' ')}</em></article>
+            </div>
+            <p className="scan-limit"><AlertTriangle size={13} /> A hash is a fingerprint, not an antivirus verdict. A “not found” reputation result also does not mean clean.</p>
+          </section>
+        ) : <div className="scan-empty"><Fingerprint size={20} /><strong>No artifact has been read</strong><span>Select a file and approve local hashing to create the normalized lookup record.</span></div>}
+      </div>
+      <div className="detail-actions browser-actions">
+        <button type="button" className="primary-button" disabled={!report} onClick={onExport}><Download size={14} /> Export JSON</button>
+        <a className="secondary-button" href="https://github.com/1243353366/orbital-fusion-console/blob/main/docs/FILE_SCANNER.md" target="_blank" rel="noopener noreferrer"><BookOpen size={14} /> Scanner guide</a>
+      </div>
+    </aside>
+  )
+}
+
 function App() {
   const [mode, setMode] = useState<Mode>('FUSION')
   const [selectedId, setSelectedId] = useState(() => {
@@ -667,12 +866,22 @@ function App() {
     return eventId && intelEvents.some((event) => event.id === eventId) ? eventId : intelEvents[0].id
   })
   const [detailTab, setDetailTab] = useState<DetailTab>('overview')
-  const [sideView, setSideView] = useState<SideView>('event')
+  const [sideView, setSideView] = useState<SideView>(() => {
+    const view = new URLSearchParams(window.location.search).get('view')
+    return view === 'browser' || view === 'artifact' ? view : 'event'
+  })
   const [query, setQuery] = useState('')
   const [imageryIndex, setImageryIndex] = useState(imageryDates.length - 1)
   const [isPlaying, setIsPlaying] = useState(false)
   const [leftOpen, setLeftOpen] = useState(false)
   const [toast, setToast] = useState('')
+  const [browserConsent, setBrowserConsent] = useState(false)
+  const [browserReport, setBrowserReport] = useState<BrowserPreviewReport | null>(null)
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null)
+  const [artifactFile, setArtifactFile] = useState<File | null>(null)
+  const [artifactConsent, setArtifactConsent] = useState(false)
+  const [artifactBusy, setArtifactBusy] = useState(false)
+  const [artifactReport, setArtifactReport] = useState<ArtifactReport | null>(null)
   const [layers, setLayers] = useState<LayerState>({ imagery: true, change: true, routes: true, labels: true })
 
   const selectedEvent = useMemo(
@@ -695,6 +904,15 @@ function App() {
     }, 1200)
     return () => window.clearInterval(timer)
   }, [isPlaying])
+
+  useEffect(() => {
+    const captureInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPrompt(event as BeforeInstallPromptEvent)
+    }
+    window.addEventListener('beforeinstallprompt', captureInstallPrompt)
+    return () => window.removeEventListener('beforeinstallprompt', captureInstallPrompt)
+  }, [])
 
   const notify = (message: string) => {
     setToast(message)
@@ -741,6 +959,102 @@ function App() {
     }
   }
 
+  const runBrowserPreview = () => {
+    if (!browserConsent) return
+    const nodes = (selector: string) => [...document.querySelectorAll(selector)]
+    const externalOrigins = new Set(nodes('script[src],img[src],iframe[src],link[href]').flatMap((element) => {
+      const reference = element.getAttribute('src') ?? element.getAttribute('href')
+      if (!reference) return []
+      try {
+        const origin = new URL(reference, window.location.href).origin
+        return origin !== window.location.origin ? [origin] : []
+      } catch {
+        return []
+      }
+    }))
+    const unlabeledFields = nodes('input:not([type="hidden"]):not([type="submit"]):not([type="button"]),select,textarea').filter((field) => {
+      const ariaLabel = field.getAttribute('aria-label') || field.getAttribute('aria-labelledby')
+      const labels = 'labels' in field ? (field as HTMLInputElement).labels : null
+      return !ariaLabel && !labels?.length
+    }).length
+    const unsafeBlankLinks = nodes('a[target="_blank"]').filter((link) => !(link as HTMLAnchorElement).relList.contains('noopener')).length
+    const findings: BrowserPreviewReport['findings'] = []
+    if (unlabeledFields) findings.push({ level: 'LOW', title: 'Unlabeled form controls', detail: `${unlabeledFields} field(s) need an accessible label review.` })
+    if (unsafeBlankLinks) findings.push({ level: 'LOW', title: 'New-tab relationship policy', detail: `${unsafeBlankLinks} link(s) do not explicitly declare noopener.` })
+    if (!document.querySelector('meta[http-equiv="Content-Security-Policy" i]')) findings.push({ level: 'INFO', title: 'Header policy not observable', detail: 'This DOM-only preview does not inspect HTTP response headers.' })
+    if (!findings.some((finding) => finding.level !== 'INFO')) findings.push({ level: 'INFO', title: 'No obvious DOM hygiene issues', detail: 'The limited local scan found no actionable structure findings.' })
+    const penalty = findings.filter((finding) => finding.level === 'LOW').length * 4
+    setBrowserReport({
+      score: Math.max(0, 100 - penalty),
+      grade: penalty === 0 ? 'A' : 'B',
+      scannedAt: new Date().toISOString(),
+      inventory: {
+        links: nodes('a[href]').length,
+        forms: nodes('form').length,
+        fields: nodes('input,select,textarea').length,
+        frames: nodes('iframe').length,
+        externalOrigins: externalOrigins.size,
+      },
+      findings,
+    })
+    setBrowserConsent(false)
+    notify('Local preview complete. No page data was uploaded.')
+  }
+
+  const installApp = async () => {
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      notify('Orbital Fusion Console is already running as an installed app.')
+      return
+    }
+    if (!installPrompt) {
+      notify('Use your browser menu → Install app. On iPhone or iPad, use Share → Add to Home Screen.')
+      return
+    }
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+    setInstallPrompt(null)
+    notify(choice.outcome === 'accepted' ? 'App installation accepted.' : 'App installation dismissed; nothing changed.')
+  }
+
+  const createArtifactReport = async () => {
+    if (!artifactFile || !artifactConsent) return
+    setArtifactBusy(true)
+    try {
+      const hashes = await hashArtifact(artifactFile)
+      setArtifactReport({
+        generatedAt: new Date().toISOString(),
+        artifact: {
+          name: artifactFile.name,
+          size: artifactFile.size,
+          type: artifactFile.type || 'application/octet-stream',
+          modifiedAt: new Date(artifactFile.lastModified).toISOString(),
+        },
+        hashes,
+        reputation: [
+          { provider: 'VirusTotal', status: 'not-configured', detections: null, engines: null, provenance: 'Hash lookup adapter · API key required' },
+          { provider: 'MetaDefender Cloud', status: 'not-configured', detections: null, engines: null, provenance: 'Hash lookup adapter · API key required' },
+        ],
+        localScan: { provider: 'ClamAV', status: 'not-run', detail: 'Run the documented local CLI scanner for an engine verdict.' },
+      })
+      notify('Fingerprints calculated locally. The artifact was not uploaded.')
+    } finally {
+      setArtifactBusy(false)
+      setArtifactConsent(false)
+    }
+  }
+
+  const exportArtifactReport = () => {
+    if (!artifactReport) return
+    const blob = new Blob([JSON.stringify(artifactReport, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = `${artifactReport.artifact.name.replace(/[^a-z0-9._-]/gi, '_')}.sentinel-scan.json`
+    anchor.click()
+    URL.revokeObjectURL(url)
+    notify('Normalized artifact report exported.')
+  }
+
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -750,11 +1064,16 @@ function App() {
         </div>
         <nav className="primary-nav" aria-label="Primary navigation">
           <button type="button" className="active"><Globe2 size={14} /> Observatory</button>
-          <button type="button" onClick={() => notify('Code Lab is represented as a safe-sandbox roadmap module in this map prototype.')}><Code2 size={14} /> Code Lab</button>
+          <button type="button" onClick={() => setSideView('browser')}><ShieldCheck size={14} /> Browser Lens</button>
+          <button type="button" onClick={() => setSideView('artifact')}><Code2 size={14} /> File Scanner</button>
           <button type="button" onClick={() => notify('Malware Lab remains non-executing in this static prototype.')}><Box size={14} /> Malware Lab</button>
           <button type="button" onClick={() => notify('Notebook persistence requires the future authenticated backend.')}><BookOpen size={14} /> Notebook</button>
         </nav>
         <div className="top-actions">
+          <span className="version-pill">v0.2.0</span>
+          <button type="button" className="install-pill" onClick={installApp}>
+            <Download size={13} /> INSTALL APP
+          </button>
           <button type="button" className="safety-pill" onClick={() => notify('All cyber indicators are synthetic and use reserved example domains/IPs.')}>
             <ShieldCheck size={13} /> SAFE ANALYSIS
           </button>
@@ -827,7 +1146,7 @@ function App() {
 
           <div className="search-box">
             <Search size={14} />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search event, region, campaign" />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search event, region, campaign" aria-label="Search events, regions, and campaigns" />
             <kbd>⌘K</kbd>
           </div>
 
@@ -869,6 +1188,39 @@ function App() {
         )}
         {sideView === 'sources' && <SourcesPanel onClose={() => setSideView('event')} />}
         {sideView === 'connectors' && <ConnectorsPanel onClose={() => setSideView('event')} notify={notify} />}
+        {sideView === 'browser' && (
+          <BrowserScanPanel
+            onClose={() => setSideView('event')}
+            consent={browserConsent}
+            setConsent={setBrowserConsent}
+            report={browserReport}
+            onScan={runBrowserPreview}
+          />
+        )}
+        {sideView === 'artifact' && (
+          <ArtifactScannerPanel
+            onClose={() => setSideView('event')}
+            file={artifactFile}
+            consent={artifactConsent}
+            setConsent={setArtifactConsent}
+            busy={artifactBusy}
+            report={artifactReport}
+            onFile={(file) => {
+              if (file && file.size > MAX_BROWSER_ARTIFACT_BYTES) {
+                notify('Artifact exceeds the 512 MB browser limit. Use the streaming local CLI instead.')
+                setArtifactFile(null)
+                setArtifactReport(null)
+                setArtifactConsent(false)
+                return
+              }
+              setArtifactFile(file)
+              setArtifactReport(null)
+              setArtifactConsent(false)
+            }}
+            onHash={createArtifactReport}
+            onExport={exportArtifactReport}
+          />
+        )}
       </main>
 
       {toast && <div className="toast"><CircleDot size={14} />{toast}</div>}

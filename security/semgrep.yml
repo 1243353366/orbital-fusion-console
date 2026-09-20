@@ -1,0 +1,61 @@
+rules:
+  - id: browser-cookie-read
+    message: Browser cookie access can expose session credentials.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: document.cookie
+
+  - id: browser-history-api
+    message: Browser history access is outside the extension's consent scope.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: chrome.history.$METHOD(...)
+      - pattern: browser.history.$METHOD(...)
+
+  - id: browser-cookie-api
+    message: Browser cookie API access is outside the extension's consent scope.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: chrome.cookies.$METHOD(...)
+      - pattern: browser.cookies.$METHOD(...)
+
+  - id: dynamic-code-execution
+    message: Dynamic code execution is prohibited in the app and extension.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+
+  - id: unsafe-inner-html
+    message: Direct innerHTML assignment can introduce DOM injection.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern: $ELEMENT.innerHTML = $VALUE
+
+  - id: unsafe-react-html
+    message: dangerouslySetInnerHTML requires a documented sanitizer.
+    severity: ERROR
+    languages: [typescript]
+    pattern-regex: 'dangerouslySetInnerHTML'
+
+  - id: sql-string-concatenation
+    message: Concatenating values into SQL queries can enable SQL injection.
+    severity: ERROR
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: $DB.query($QUERY + $INPUT, ...)
+      - pattern: $DB.execute($QUERY + $INPUT, ...)
+      - pattern: $DB.run($QUERY + $INPUT, ...)
+
+  - id: child-process-execution
+    message: Unexpected operating-system command execution.
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern-either:
+      - pattern: child_process.exec(...)
+      - pattern: child_process.execSync(...)
+      - pattern: child_process.spawn(...)
+      - pattern: child_process.spawnSync(...)

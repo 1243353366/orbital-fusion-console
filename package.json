@@ -1,18 +1,23 @@
 {
   "name": "orbital-fusion-console",
   "private": true,
-  "version": "0.0.0",
-  "description": "A provenance-aware CYBER / EARTH / FUSION intelligence map prototype.",
+  "version": "0.2.0",
+  "description": "Sentinel Atlas v0.2.0 Release Hardening: provenance-aware mapping, consent-based browser review, and hash-first artifact verification.",
   "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "release:pack": "npm run build && node scripts/package-release.mjs",
+    "scan:file": "node tools/sentinel-scan.mjs",
     "test:e2e": "node scripts/e2e.mjs",
+    "test:extension": "node scripts/validate-extension.mjs",
+    "test:security-boundaries": "node scripts/validate-security-boundaries.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "hash-wasm": "^4.12.0",
     "lucide-react": "^1.47.0",
     "maplibre-gl": "^6.10.0",
     "react": "^19.2.8",

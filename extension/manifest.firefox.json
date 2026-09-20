@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "Orbital Browser Lens",
+  "version": "0.2.0",
+  "description": "Locally inspect the active tab after explicit one-time consent. No history, cookies, passwords, or form values are collected.",
+  "permissions": ["activeTab", "scripting"],
+  "action": {
+    "default_title": "Scan this page with Orbital Browser Lens",
+    "default_popup": "popup.html"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "orbital-browser-lens@1243353366.github.io",
+      "strict_min_version": "109.0"
+    }
+  }
+}
