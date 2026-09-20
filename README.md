@@ -4,6 +4,8 @@ A polished, installable progressive web app for exploring how **cyber intelligen
 
 **Live app:** <https://1243353366.github.io/orbital-fusion-console/>
 
+**Live security dossier:** <https://1243353366.github.io/orbital-fusion-console/security/>
+
 > **Safety boundary:** all cyber indicators, infrastructure, campaigns, and malware relationships in this prototype are synthetic. Reserved example IP ranges and `.example` domains are used deliberately. The app does not execute malware, scan targets, store API keys, or make claims about real buildings or people.
 
 ## What the prototype demonstrates
@@ -28,7 +30,7 @@ The exact v0.2.1 scan scope, engine versions, results, limitations, and release 
 
 ## Quick start
 
-Requirements: **Node.js 22 or later** and npm.
+Requirements: **Node.js 25 or later** and npm. The repository includes `.nvmrc` and `.node-version` pins for compatible runtime managers.
 
 ```bash
 git clone https://github.com/1243353366/orbital-fusion-console.git

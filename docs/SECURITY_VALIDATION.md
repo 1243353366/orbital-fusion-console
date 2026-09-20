@@ -6,6 +6,8 @@
 
 **Scope:** source, dependencies, configuration, browser extension, production bundle, and versioned release archives
 
+**Interactive dossier:** <https://1243353366.github.io/orbital-fusion-console/security/>
+
 ## Result
 
 The reproducible release gate completed successfully with **zero detected infections, zero YARA threat matches, zero dependency vulnerabilities, zero secret findings in code/configuration, and zero blocking static-analysis findings**.

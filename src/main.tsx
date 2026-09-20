@@ -9,10 +9,13 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 )
 
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
+const isProductionBundle = !document.querySelector('script[src*="/src/main.tsx"]')
+if ('serviceWorker' in navigator && isProductionBundle) {
+  const registerServiceWorker = () => {
     navigator.serviceWorker.register('./sw.js').catch((error) => {
       console.warn('Service worker registration failed:', error)
     })
-  })
+  }
+  if (document.readyState === 'complete') registerServiceWorker()
+  else window.addEventListener('load', registerServiceWorker, { once: true })
 }

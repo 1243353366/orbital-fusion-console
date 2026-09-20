@@ -1,5 +1,5 @@
-const CACHE_NAME = 'orbital-fusion-shell-v1'
-const APP_SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-maskable.svg']
+const CACHE_NAME = 'orbital-fusion-shell-v2'
+const APP_SHELL = ['./', './index.html', './security/', './manifest.webmanifest', './icon.svg', './icon-maskable.svg']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)))
@@ -25,7 +25,9 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
           return response
         })
-        .catch(() => caches.match('./index.html')),
+        .catch(() => requestUrl.pathname.endsWith('/security/')
+          ? caches.match('./security/')
+          : caches.match('./index.html')),
     )
     return
   }

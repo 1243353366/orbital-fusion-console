@@ -5,6 +5,9 @@
   "description": "Sentinel Atlas v0.2.1 Release Hardening: provenance-aware mapping, consent-based browser review, and hash-first artifact verification.",
   "license": "MIT",
   "type": "module",
+  "engines": {
+    "node": ">=25.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -12,6 +15,7 @@
     "release:pack": "npm run build && node scripts/package-release.mjs",
     "scan:file": "node tools/sentinel-scan.mjs",
     "test:e2e": "node scripts/e2e.mjs",
+    "test:security-site": "node scripts/test-security-site.mjs",
     "test:extension": "node scripts/validate-extension.mjs",
     "test:security-boundaries": "node scripts/validate-security-boundaries.mjs",
     "preview": "vite preview"
@@ -24,7 +28,7 @@
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/node": "^24.13.3",
+    "@types/node": "^25.0.0",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",

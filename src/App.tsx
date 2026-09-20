@@ -1085,9 +1085,9 @@ function App() {
           <button type="button" className="install-pill" onClick={installApp}>
             <Download size={13} /> INSTALL APP
           </button>
-          <button type="button" className="safety-pill" onClick={() => notify('All cyber indicators are synthetic and use reserved example domains/IPs.')}>
+          <a className="safety-pill" href="./security/" aria-label="Open the release security dossier">
             <ShieldCheck size={13} /> SAFE ANALYSIS
-          </button>
+          </a>
           <button type="button" className="gate-button" onClick={() => setSideView('sources')}>
             <Fingerprint size={14} /> Data gate <span>5 / 3</span>
           </button>

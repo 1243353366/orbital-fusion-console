@@ -32,7 +32,9 @@ jq -e '.results | map(select(.extra.severity == "ERROR")) | length == 0' .securi
 printf '7/9 YARA source and release scan\n'
 : > .security-results/yara.txt
 for target in src extension dist release; do
-  yara -r security/project-threats.yar "$target" >> .security-results/yara.txt
+  if [ -e "$target" ]; then
+    yara -r security/project-threats.yar "$target" >> .security-results/yara.txt
+  fi
 done
 [ ! -s .security-results/yara.txt ]
 

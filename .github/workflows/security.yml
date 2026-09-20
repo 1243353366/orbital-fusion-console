@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 25
           cache: npm
       - name: Install project dependencies
         run: npm ci
@@ -28,8 +28,18 @@ jobs:
           pipx install semgrep
           pipx install detect-secrets
           sudo freshclam || true
-      - name: Build release artifacts
-        run: npm run release:pack
+      - name: Build production pages
+        run: npm run build
+      - name: Test security dossier
+        run: |
+          npm run preview -- --host 127.0.0.1 --port 4175 > /tmp/security-site-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill $preview_pid' EXIT
+          for attempt in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:4175/security/ >/dev/null && break
+            sleep 1
+          done
+          TEST_URL=http://127.0.0.1:4175/ npm run test:security-site
       - name: Run layered security scan
         run: ./scripts/security-scan.sh
       - name: Upload scan evidence
@@ -38,4 +48,5 @@ jobs:
         with:
           name: security-scan-results
           path: .security-results/
+          include-hidden-files: true
           if-no-files-found: warn
