@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Orbital Browser Lens",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Locally inspect the active tab after explicit one-time consent. No history, cookies, passwords, or form values are collected.",
   "permissions": ["activeTab", "scripting"],
   "action": {

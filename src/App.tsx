@@ -218,7 +218,17 @@ function FusionMap({
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'bottom-right')
     map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left')
 
+    const isolateGeneratedLinks = () => {
+      map.getContainer().querySelectorAll<HTMLAnchorElement>('a[target="_blank"]').forEach((link) => {
+        link.relList.add('noopener', 'noreferrer')
+      })
+    }
+    const attributionObserver = new MutationObserver(isolateGeneratedLinks)
+    attributionObserver.observe(map.getContainer(), { childList: true, subtree: true })
+    map.on('idle', isolateGeneratedLinks)
+
     map.on('load', () => {
+      isolateGeneratedLinks()
       baseLayerIdsRef.current = (map.getStyle().layers ?? []).map((layer) => layer.id)
       const firstSymbolLayer = (map.getStyle().layers ?? []).find((layer) => layer.type === 'symbol')?.id
       map.addSource('nasa-imagery', {
@@ -368,6 +378,7 @@ function FusionMap({
 
     mapRef.current = map
     return () => {
+      attributionObserver.disconnect()
       map.remove()
       mapRef.current = null
     }
@@ -1070,7 +1081,7 @@ function App() {
           <button type="button" onClick={() => notify('Notebook persistence requires the future authenticated backend.')}><BookOpen size={14} /> Notebook</button>
         </nav>
         <div className="top-actions">
-          <span className="version-pill">v0.2.0</span>
+          <span className="version-pill">v0.2.1</span>
           <button type="button" className="install-pill" onClick={installApp}>
             <Download size={13} /> INSTALL APP
           </button>

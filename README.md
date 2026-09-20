@@ -24,7 +24,7 @@ It also includes an interactive MapLibre map, live NASA GIBS browse tiles, a pro
 
 **File Scanner** calculates SHA-256, SHA-1, and MD5 locally before any reputation lookup. The included CLI normalizes local ClamAV, VirusTotal hash lookup, and MetaDefender Cloud hash lookup results. It never uploads artifacts. See [`docs/FILE_SCANNER.md`](docs/FILE_SCANNER.md).
 
-The exact v0.2.0 scan scope, engine versions, results, limitations, and release hashes are recorded in [`docs/SECURITY_VALIDATION.md`](docs/SECURITY_VALIDATION.md).
+The exact v0.2.1 scan scope, engine versions, results, limitations, and release hashes are recorded in [`docs/SECURITY_VALIDATION.md`](docs/SECURITY_VALIDATION.md).
 
 ## Quick start
 
@@ -80,7 +80,7 @@ A complete walkthrough is available in [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md
 
 After the deployed app has loaded, select **Install app** in the header or use the browser’s install action. On iOS/iPadOS, use **Share → Add to Home Screen**. The app shell can reopen offline after it has been cached; live external map tiles still require a network connection and are intentionally not copied into the service-worker cache.
 
-The **v0.2.0 Release Hardening** GitHub release contains a no-dependency localhost bundle. Extract `sentinel-atlas-v0.2.0-localhost.zip`, run `node start-local.mjs`, and open `http://127.0.0.1:4173`. The launcher binds only to the local loopback interface.
+The **v0.2.1 Release Hardening** GitHub release contains a no-dependency localhost bundle. Extract `sentinel-atlas-v0.2.1-localhost.zip`, run `node start-local.mjs`, and open `http://127.0.0.1:4173`. The launcher binds only to the local loopback interface.
 
 ## Data and licensing model
 

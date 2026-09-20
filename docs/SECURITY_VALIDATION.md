@@ -1,8 +1,8 @@
-# v0.2.0 Release Hardening Validation
+# v0.2.1 Release Hardening Validation
 
-**Release label:** Sentinel Atlas v0.2.0 — Release Hardening
+**Release label:** Sentinel Atlas v0.2.1 — Release Hardening
 
-**Validation time:** 2026-09-20T21:48:50Z
+**Validation time:** 2026-09-20T22:01:34Z
 
 **Scope:** source, dependencies, configuration, browser extension, production bundle, and versioned release archives
 
@@ -12,7 +12,7 @@ The reproducible release gate completed successfully with **zero detected infect
 
 | Control | Tool or test | Result |
 | --- | --- | --- |
-| Consent/accessibility scan | Browser Lens plus Puppeteer workflow | Passed; one unlabeled search field and two new-tab isolation findings were found and fixed before this report. |
+| Consent/accessibility scan | Browser Lens plus Puppeteer workflow | Passed; one unlabeled search field, two application links, and three runtime-generated MapLibre attribution links were found and fixed before this report. The final suite waits for attribution rendering and verifies explicit `noopener noreferrer`. |
 | Dependency audit | `npm audit` for production and complete dependency sets | 0 info, low, moderate, high, or critical vulnerabilities. |
 | Secret/config audit | `detect-secrets` over source, configuration, workflows, scripts, and manifests | 0 findings. Documentation examples and YARA signature literals are excluded to prevent known false positives. |
 | API authorization audit | `scripts/validate-security-boundaries.mjs` | Passed; provider credentials are CLI environment variables only and are absent from the public browser bundle. |
@@ -21,7 +21,7 @@ The reproducible release gate completed successfully with **zero detected infect
 | CSP/security policy | Static CSP plus local-server response headers | Restrictive origin allowlist, no objects, no forms, same-origin manifest/worker policy, and no remote scripts. |
 | Static security analysis | 8 custom Semgrep rules plus 74 community JavaScript/TypeScript rules | 0 findings and 0 community errors. |
 | Malware, worm, credential-theft, and cryptominer patterns | Custom YARA rules | 0 matches across source, extension, production bundle, and release archives. |
-| Antivirus | ClamAV 1.5.3, 3,628,071 known signatures | 9,129 files and 413.65 MiB scanned; 0 infected files. |
+| Antivirus | ClamAV 1.5.3, 3,628,071 known signatures | 9,129 files and 413.59 MiB scanned; 0 infected files. |
 | Extension behavior | Deterministic safe/risky DOM fixtures | Passed minimal-permission, prohibited-API, safe-fixture, and risky-fixture checks. |
 | Archive integrity | `unzip -t` and SHA-256 | All three versioned archives passed structural validation and have published hashes. |
 
@@ -29,9 +29,9 @@ The reproducible release gate completed successfully with **zero detected infect
 
 | Artifact | SHA-256 |
 | --- | --- |
-| `sentinel-atlas-browser-lens-v0.2.0-chromium.zip` | `171c1b4594aefbd80dab22e8623d5a7c5bff72665bdc9bb955605d382a1292f4` |
-| `sentinel-atlas-browser-lens-v0.2.0-firefox.zip` | `e3776886daaba705f96744c83d48c74db9feb80b33ee9b11e87428907273b1d1` |
-| `sentinel-atlas-v0.2.0-localhost.zip` | `244edef6ba218718cd29f84caa994cf0bd4927138985faa987af7f666bb9d8fc` |
+| `sentinel-atlas-browser-lens-v0.2.1-chromium.zip` | `e2f125de7a7a422337658773fa7dad3b602795b5199afba87d9f591376fd2f1f` |
+| `sentinel-atlas-browser-lens-v0.2.1-firefox.zip` | `4d45731c96b6b8c8e59202841a057c6d3446e69c8a006d560858034bf0b68d0c` |
+| `sentinel-atlas-v0.2.1-localhost.zip` | `9511678285e466586901da7c2f0a02a311f1b585709005e71d8fca33395b80f1` |
 
 Verify after download:
 

@@ -21,7 +21,7 @@ It does not read or retain browsing history, other tabs, cookies, local storage,
 
 ## Install on Chrome, Edge, Brave, Opera, or another Chromium browser
 
-1. Download `sentinel-atlas-browser-lens-v0.2.0-chromium.zip` from the latest GitHub release and extract it.
+1. Download `sentinel-atlas-browser-lens-v0.2.1-chromium.zip` from the latest GitHub release and extract it.
 2. Open the browser's extension manager (`chrome://extensions` in Chrome or Brave, `edge://extensions` in Edge).
 3. Enable **Developer mode**.
 4. Choose **Load unpacked** and select the extracted directory.
@@ -31,7 +31,7 @@ Browser stores require their own review and signing process. The repository pack
 
 ## Install on Firefox
 
-1. Download `sentinel-atlas-browser-lens-v0.2.0-firefox.zip` from the latest GitHub release and extract it.
+1. Download `sentinel-atlas-browser-lens-v0.2.1-firefox.zip` from the latest GitHub release and extract it.
 2. Open `about:debugging#/runtime/this-firefox`.
 3. Choose **Load Temporary Add-on** and select `manifest.json` in the extracted directory.
 
@@ -52,4 +52,4 @@ Consent resets after every scan. Restricted browser pages such as extension sett
 
 Open the [live Orbital Fusion Console](https://1243353366.github.io/orbital-fusion-console/) over HTTPS and use the browser's **Install app** action. Chrome and Edge can install it as a windowed app on Windows, macOS, Linux, and ChromeOS. On iOS and iPadOS, use **Share → Add to Home Screen**. Browser support varies.
 
-For an offline localhost copy, download `sentinel-atlas-v0.2.0-localhost.zip` from the latest release, extract it, and follow its included README. The local launcher binds only to `127.0.0.1` and opens the app at `http://127.0.0.1:4173`.
+For an offline localhost copy, download `sentinel-atlas-v0.2.1-localhost.zip` from the latest release, extract it, and follow its included README. The local launcher binds only to `127.0.0.1` and opens the app at `http://127.0.0.1:4173`.

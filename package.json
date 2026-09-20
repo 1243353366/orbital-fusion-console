@@ -1,8 +1,8 @@
 {
   "name": "orbital-fusion-console",
   "private": true,
-  "version": "0.2.0",
-  "description": "Sentinel Atlas v0.2.0 Release Hardening: provenance-aware mapping, consent-based browser review, and hash-first artifact verification.",
+  "version": "0.2.1",
+  "description": "Sentinel Atlas v0.2.1 Release Hardening: provenance-aware mapping, consent-based browser review, and hash-first artifact verification.",
   "license": "MIT",
   "type": "module",
   "scripts": {
