@@ -140,3 +140,7 @@ The application itself is released under the [MIT License](LICENSE). Third-party
 ## Contributing
 
 Read [`CONTRIBUTING.md`](CONTRIBUTING.md) before proposing a new connector or dataset. Contributions that weaken provenance, bypass access controls, enable offensive operations, or obscure synthetic-vs-real distinctions will not be accepted.
+
+---
+
+Thanks for reading. More of my work: [github.com/1243353366](https://github.com/1243353366).
